@@ -145,3 +145,16 @@ tbody tr:last-child td { border-bottom: none; }
 .foot-links { display: flex; gap: 1.1rem; flex-wrap: wrap; font-family: ui-sans-serif, system-ui, sans-serif; font-size: var(--s--1); margin-bottom: .9rem; }
 .foot-links a { color: var(--ink-mute); text-decoration: none; }
 .foot-links a:hover, .foot-links a:focus-visible { color: var(--navy); }
+
+/* ---- code blocks (journal) ---- */
+pre {
+  background: var(--surface); border: 1px solid var(--rule);
+  border-left: 3px solid var(--navy); border-radius: 6px;
+  padding: 1rem 1.15rem; overflow-x: auto; margin: 0 0 1.3rem;
+  max-width: var(--measure);
+  font-size: var(--s--1); line-height: 1.55;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+}
+pre code { background: none; padding: 0; font-size: 1em; }
+article .card h3 a { text-decoration: none; }
+article .card h3 a:hover { text-decoration: underline; }

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Journal — MessageVault AI</title>
+<meta name="description" content="Notes on building MessageVault AI: on-device search, AI tagging, and the things that went wrong along the way.">
+<link rel="canonical" href="https://fpalmaii.github.io/messagevault-site/journal/">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../"><span class="mark">V</span> MessageVault AI</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="../how-it-works/">How it works</a>
+      <a href="../compare/">Compare</a>
+      <a href="../journal/">Journal</a>
+      <a href="https://apps.apple.com/app/messagevault-ai/id6762476394">Download</a>
+    </nav>
+  </div>
+</header>
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Journal</p>
+      <h1>Notes from building it</h1>
+      <p class="lede">Engineering write-ups from MessageVault AI — mostly about on-device search, and mostly about things that went wrong.</p>
+    </div>
+  </section>
+  <section>
+    <div class="wrap">
+      <div class="cards two">
+        <div class="card">
+          <h3><a href="fts5-prefix-search-porter-stemmer/">A longer prefix returned fewer results</a></h3>
+          <p>In SQLite FTS5 with the porter tokenizer, typing one more character can take you from results to zero and back. Stemming shortens tokens, so an intermediate prefix can overshoot what is actually stored. Reproducible in four lines.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="../">Home</a>
+      <a href="../how-it-works/">How it works</a>
+      <a href="../compare/">Compare</a>
+      <a href="https://fpalmaii.github.io/messagevault-privacy/">Privacy policy</a>
+      <a href="https://apps.apple.com/app/messagevault-ai/id6762476394">App Store</a>
+    </div>
+    <p>MessageVault AI is an iPhone app by Volta Solutions LLC. Requires iOS 16.6 or later.</p>
+    <p>© 2026 Volta Solutions LLC</p>
+  </div>
+</footer>
+</body>
+</html>

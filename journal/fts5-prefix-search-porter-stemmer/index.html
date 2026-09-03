@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A longer prefix returned fewer results: an FTS5 Porter stemmer trap</title>
+<meta name="description" content="In SQLite FTS5 with the porter tokenizer, typing more characters can take you from results to zero and back again. Because stemming shortens tokens, an intermediate prefix can be longer than what is actually stored. Reproducible in four lines.">
+<link rel="canonical" href="https://fpalmaii.github.io/messagevault-site/journal/fts5-prefix-search-porter-stemmer/">
+<meta property="og:title" content="A longer prefix returned fewer results: an FTS5 Porter stemmer trap">
+<meta property="og:description" content="With the porter tokenizer, anim* matches, anima* returns nothing, and animal* matches again. Here is why, and what it breaks.">
+<meta property="og:type" content="article">
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../../"><span class="mark">V</span> MessageVault AI</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="../../how-it-works/">How it works</a>
+      <a href="../../compare/">Compare</a>
+      <a href="../">Journal</a>
+      <a href="https://apps.apple.com/app/messagevault-ai/id6762476394">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <article>
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">Journal · SQLite</p>
+      <h1>A longer prefix returned fewer results</h1>
+      <p class="lede">Search-as-you-type was going blank mid-word and then recovering. The cause turned out to be a property of the Porter stemmer that makes prefix matching non-monotonic — and it's reproducible in four lines of SQL.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>The symptom</h2>
+      <p class="narrow">Typing a query one character at a time should narrow results monotonically. Every additional character can only ever remove matches, never add them back.</p>
+      <p class="narrow">That isn't what happened. Typing <code>animals</code> into our search box produced results at <code>anim</code>, <strong>nothing at all</strong> at <code>anima</code>, and results again at <code>animal</code>. The grid emptied out for exactly one keystroke and then repopulated.</p>
+      <p class="narrow">The index is SQLite FTS5, declared like this:</p>
+      <pre><code>CREATE VIRTUAL TABLE search_index USING fts5(
+    content_item_id UNINDEXED,
+    raw_text,
+    preview_title,
+    tags,
+    tokenize = 'porter unicode61 remove_diacritics 1'
+);</code></pre>
+      <p class="narrow">Queries are issued as prefix terms — <code>anim*</code>, <code>anima*</code>, and so on — as the user types.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Minimal reproduction</h2>
+      <p class="narrow">No application code needed. This is plain SQLite — verified on 3.49.1.</p>
+      <pre><code>CREATE VIRTUAL TABLE t USING fts5(body, tokenize='porter unicode61');
+INSERT INTO t VALUES ('cute animals playing in the snow');
+
+SELECT count(*) FROM t WHERE t MATCH 'anim*';    -- 1
+SELECT count(*) FROM t WHERE t MATCH 'anima*';   -- 0   &lt;-- ?
+SELECT count(*) FROM t WHERE t MATCH 'animal*';  -- 1</code></pre>
+      <p class="narrow">Swap the tokenizer for <code>unicode61</code> alone and all three return 1, as you'd expect.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Why it happens</h2>
+      <p class="narrow">The porter tokenizer stems <em>both</em> the stored tokens and the query terms. "animals" and "animal" are both stored as the stem <code>anim</code>.</p>
+      <p class="narrow">A prefix query is stemmed first, then prefix-matched against the stored stems. So the real question for any typed prefix <code>P</code> is: <strong>is <code>stem(P)</code> a prefix of <code>anim</code>?</strong></p>
+      <div class="tscroll">
+        <table>
+          <thead><tr><th>Typed</th><th>Stems to</th><th>Prefix of <code>anim</code>?</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td><code>anim*</code></td><td><code>anim</code></td><td>yes</td><td>match</td></tr>
+            <tr><td><code>anima*</code></td><td><code>anima</code> — no rule applies</td><td><strong>no, it's longer</strong></td><td><strong>zero</strong></td></tr>
+            <tr><td><code>animal*</code></td><td><code>anim</code></td><td>yes</td><td>match</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="narrow">That's the whole thing. <strong>Stemming shortens tokens, so an intermediate prefix of a word can be longer than the stem that word is actually stored under.</strong> When no stemming rule happens to apply to that partial string, it stays long, overshoots the stored stem, and matches nothing.</p>
+      <p class="narrow">Prefix matching assumes the stored form is a superstring of what you type. Stemming breaks that assumption, and the two features don't compose.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>It isn't one unlucky word</h2>
+      <p class="narrow">"animals" was just what we happened to test with. The dead zone shows up across ordinary English, and it's often wider than one character. Each row below is a single word, indexed alone, queried with every prefix from three characters up:</p>
+      <div class="tscroll">
+        <table>
+          <thead><tr><th>Word</th><th>Prefix results (1 = found, 0 = nothing)</th></tr></thead>
+          <tbody>
+            <tr><td><code>animals</code></td><td><code>ani</code>1 <code>anim</code>1 <strong><code>anima</code>0</strong> <code>animal</code>1 <code>animals</code>1</td></tr>
+            <tr><td><code>cooking</code></td><td><code>coo</code>1 <code>cook</code>1 <strong><code>cooki</code>0 <code>cookin</code>0</strong> <code>cooking</code>1</td></tr>
+            <tr><td><code>running</code></td><td><code>run</code>1 <strong><code>runn</code>0 <code>runni</code>0 <code>runnin</code>0</strong> <code>running</code>1</td></tr>
+            <tr><td><code>swimming</code></td><td><code>swi</code>1 <code>swim</code>1 <strong><code>swimm</code>0 <code>swimmi</code>0 <code>swimmin</code>0</strong> <code>swimming</code>1</td></tr>
+            <tr><td><code>training</code></td><td><code>tra</code>1 <code>trai</code>1 <code>train</code>1 <strong><code>traini</code>0 <code>trainin</code>0</strong> <code>training</code>1</td></tr>
+            <tr><td><code>happiness</code></td><td><code>hap</code>1 <code>happ</code>1 <code>happi</code>1 <strong><code>happin</code>0 <code>happine</code>0 <code>happines</code>0</strong> <code>happiness</code>1</td></tr>
+            <tr><td><code>national</code></td><td><code>nat</code>1 <code>nati</code>1 <code>natio</code>1 <code>nation</code>1 <strong><code>nationa</code>0</strong> <code>national</code>1</td></tr>
+            <tr><td><code>traveling</code></td><td><code>tra</code>1 <code>trav</code>1 <code>trave</code>1 <code>travel</code>1 <code>traveli</code>1 <strong><code>travelin</code>0</strong> <code>traveling</code>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="narrow">Every one of these has a hole. <code>happiness</code> and <code>swimming</code> each go dark for three consecutive keystrokes. And note <code>running</code>: the stem is <code>run</code>, so even <code>runn</code> — a four-character prefix of a seven-character word — finds nothing.</p>
+      <p class="narrow">The <span style="white-space:nowrap">-ing</span> class is the painful one, because it's a large slice of the vocabulary people actually search for.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Why this is worse than a normal empty result</h2>
+      <p class="narrow">A search that returns nothing is fine when there's genuinely nothing. The problem here is that it looks like a bug in the app rather than a fact about the data — the results were <em>right there</em> a keystroke ago.</p>
+      <p class="narrow">It also breaks incremental search specifically. If results only shrink as you type, you can cache, you can filter the previous result set, and the user builds an accurate mental model. Once an extra character can take you from 40 results to zero and back to 40, every one of those assumptions is gone.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>The interim fix, and why it's a workaround</h2>
+      <p class="narrow">The proper fix is to drop the stemmer. We didn't do that first, because changing the tokenizer means dropping and rebuilding the index on every installed device — a migration with real failure modes, and this was a shipped app with a user-visible bug.</p>
+      <p class="narrow">So the interim fix is a backoff. On a zero result, walk the last token back one character at a time and use the first form that matches:</p>
+      <pre><code>anima*  -> 0 results
+anim*   -> match      use this
+</code></pre>
+      <p class="narrow">Three details that matter more than the idea:</p>
+      <ul>
+        <li>There's a <strong>three-character floor</strong>. Below that the backoff would match most of the index and the results would be noise.</li>
+        <li>If nothing matches at any length, the <strong>original expression is restored</strong> — so a genuinely empty search still honestly reports no matches, rather than silently showing results for a shorter word the user never typed.</li>
+        <li>The result grid and the "N saved" counter resolve through the <strong>same function</strong>. An earlier version computed them separately, which meant the counter could disagree with the number of visible tiles.</li>
+      </ul>
+      <p class="narrow">It's a workaround and it reads like one. It papers over the hole rather than removing it, and it can return results for <code>anim</code> when the user typed <code>anima</code> — technically not what they asked for, though in practice indistinguishable from what they wanted.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>The actual fix</h2>
+      <p class="narrow">Drop <code>porter</code> and use <code>unicode61</code> alone.</p>
+      <p class="narrow">The reason this is acceptable rather than a loss is that <strong>prefix matching already provides most of what the stemmer was there for</strong>. The classic argument for stemming is that a search for "animal" should find "animals" — but <code>animal*</code> finds "animals" anyway, without a stemmer, because it's a literal prefix. Stemming earns its keep on suffixes that <em>aren't</em> prefixes, like "ran" for "run", and for a search box over your own saved content that's a much smaller win than the dead zone is a loss.</p>
+      <p class="narrow">The cost is the migration: dropping and rebuilding the FTS index on device, for every install, without losing anything if it's interrupted. That ships in the next release rather than being rushed out behind a bug fix.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>The general lesson</h2>
+      <p class="narrow"><strong>Prefix search and stemming are individually reasonable and jointly broken.</strong> If you're building search-as-you-type on FTS5, or on any engine that stems at index time, the property you actually depend on is that results shrink monotonically as the query grows — and a stemmer silently removes it.</p>
+      <p class="narrow">It's easy to miss because it doesn't fail on the words you test with. It fails in the middle of words, on a subset of the vocabulary, and only if you happen to type one character at a time and look.</p>
+      <p class="narrow">If you have a stemmed FTS5 index behind an incremental search box right now, the four-line reproduction at the top will tell you in about a minute whether you have this.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Context</h2>
+      <p class="narrow">This came out of <a href="../../">MessageVault AI</a>, an iPhone app that saves posts you share from Instagram, Facebook, YouTube, X and TikTok, tags them with an AI model at save time, and then lets you search them.</p>
+      <p class="narrow">The relevant architectural point is that <strong>search itself invokes no model and touches no network</strong> — the AI runs once, when a post is saved, and writes tags into the local index. Everything after that is a SQLite query on the device. That's why an FTS5 tokenizer setting was able to become a user-visible bug in the first place, and it's <a href="../../how-it-works/">described in more detail here</a>.</p>
+    </div>
+  </section>
+  </article>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="../../">Home</a>
+      <a href="../../how-it-works/">How it works</a>
+      <a href="../../compare/">Compare</a>
+      <a href="../">Journal</a>
+      <a href="https://fpalmaii.github.io/messagevault-privacy/">Privacy policy</a>
+      <a href="https://apps.apple.com/app/messagevault-ai/id6762476394">App Store</a>
+    </div>
+    <p>MessageVault AI is an iPhone app by Volta Solutions LLC. Requires iOS 16.6 or later.</p>
+    <p>© 2026 Volta Solutions LLC</p>
+  </div>
+</footer>
+
+</body>
+</html>
