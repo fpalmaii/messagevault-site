@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How MessageVault works — and exactly what leaves your phone</title>
+<meta name="description" content="A plain-English account of how MessageVault tags and searches your saved posts: search runs entirely on your device, and only a short public snippet and a small thumbnail are ever sent anywhere.">
+<link rel="canonical" href="https://fpalmaii.github.io/messagevault-site/how-it-works/">
+<meta property="og:title" content="How MessageVault works — and exactly what leaves your phone">
+<meta property="og:description" content="Search runs on your device. Only a short public snippet and a small thumbnail are ever sent. Here is precisely what that means.">
+<meta property="og:type" content="article">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="brand" href="../"><span class="mark">V</span> MessageVault</a>
+    <nav class="site-nav" aria-label="Main">
+      <a href="../how-it-works/">How it works</a>
+      <a href="../compare/">Compare</a>
+      <a href="https://apps.apple.com/app/messagevault-ai/id6762476394">Download</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="wrap">
+      <p class="eyebrow">How it works</p>
+      <h1>Exactly what leaves your phone</h1>
+      <p class="lede">Most apps that promise privacy ask you to take their word for it. This page describes precisely what MessageVault sends, what it never sends, and why the difference is built into how the app works rather than promised in a policy.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>What happens when you save something</h2>
+      <p class="narrow">Five things, in order.</p>
+      <div class="cards three">
+        <div class="card">
+          <span class="num">01</span>
+          <h3>It saves instantly</h3>
+          <p>The share extension writes the post straight to a database on your phone. It doesn't wait for the internet, and it doesn't wait for us.</p>
+        </div>
+        <div class="card">
+          <span class="num">02</span>
+          <h3>It's searchable immediately</h3>
+          <p>The post's own text and title are indexed the moment it lands — before any AI has seen it. If you're offline, it's still saved and still findable.</p>
+        </div>
+        <div class="card">
+          <span class="num">03</span>
+          <h3>A snippet goes out for tagging</h3>
+          <p>A short piece of public text and a small preview image are sent to an AI model, which describes what the post is about.</p>
+        </div>
+        <div class="card">
+          <span class="num">04</span>
+          <h3>Tags come back</h3>
+          <p>Between three and sixteen subject tags, plus a one-line summary. They're written to your phone and added to the index.</p>
+        </div>
+        <div class="card">
+          <span class="num">05</span>
+          <h3>Searching happens locally</h3>
+          <p>From then on, finding it is a database query on your device. Nothing is sent when you search.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Search never touches the internet</h2>
+      <p class="narrow">This is the part people find surprising, so it's worth being clear about.</p>
+      <p class="narrow"><strong>When you type in the search box, no AI model runs and no request is sent.</strong> Your search is a query against a local index on your phone, using the same kind of full-text search a desktop app would use.</p>
+      <p class="narrow">The intelligence already happened — hours or weeks earlier, when the post was saved and tagged. That's why searching for "animals" can surface a video you never labelled: the tag was written at save time and has been sitting on your phone ever since.</p>
+      <p class="narrow">Three things follow from that. Search works with no signal. It returns instantly, because there's no round trip. And it costs nothing to run, which is why there's no limit on how much you search.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>What is sent, precisely</h2>
+      <p class="narrow">Being honest about this matters more than claiming nothing ever leaves. Something does. Here it is.</p>
+
+      <div class="tscroll">
+        <table>
+          <thead><tr><th>Sent for tagging</th><th>Never sent</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Up to 500 characters of the public post's text</td>
+              <td>The message or conversation you got it from</td>
+            </tr>
+            <tr>
+              <td>A small preview thumbnail, shrunk to 512 pixels or less</td>
+              <td>Who sent it to you, or any contact details</td>
+            </tr>
+            <tr>
+              <td>The platform name, for context</td>
+              <td>Anything you type into the search box</td>
+            </tr>
+            <tr>
+              <td class="no">— nothing else —</td>
+              <td>Your library, your tags, or how you use the app</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="narrow">The 500-character limit is enforced twice — once on your phone before the request is built, and again on the server, so a mistake in one place can't defeat it. The server also rejects outright any request that contains fields like sender or conversation identifiers, and refuses any image above a hard size ceiling, so a full-resolution photo cannot be pushed through even by accident.</p>
+      <p class="narrow">There's a matching rule on your phone: if a preview image is too large, the app shrinks it further — reducing quality and dimensions step by step — until it fits. It was written that way deliberately. Raising the server's limit would have been the easy fix, and it would have weakened the exact protection that makes the promise meaningful.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>What we don't collect</h2>
+      <div class="claim narrow">
+        <p><strong>No analytics.</strong> MessageVault sends us nothing about how you use it. There's a diagnostic log, but it lives on your phone and only you can read it — you'll find it in Settings.</p>
+        <p><strong>No search history.</strong> Searches never leave your device, so there is no history for anyone to keep.</p>
+        <p><strong>No profile.</strong> There is no account to create and nothing linking your saves to you.</p>
+        <p><strong>No links in the search index.</strong> Web addresses are deliberately stripped before indexing, so searching for "https" doesn't return your whole library — and the URLs you've saved aren't part of what gets searched.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Why it's built this way</h2>
+      <p class="narrow">Because of how the app makes money.</p>
+      <p class="narrow">MessageVault costs $1.99 a month, and that subscription is the whole business. There are no ads to target, no affiliate links to place, and no advertisers who would find your saved posts valuable. Keeping your library on your phone doesn't cost us anything, because we were never going to make money from it.</p>
+      <p class="narrow">Free apps in this category work differently by necessity. If an app doesn't charge, something else is paying for it — usually advertising, affiliate commissions on the products you save, or the data itself. That's a legitimate business model, and it's a different one. It just requires seeing what you saved.</p>
+      <p class="narrow">This is also why the app is smaller than its free competitors. There's no shopping feature and no price tracking, because those exist to serve a revenue model we don't have.</p>
+      <div class="cta-row" style="margin-top:1.8rem;">
+        <a class="btn btn-primary" href="https://apps.apple.com/app/messagevault-ai/id6762476394">Get it on the App Store</a>
+        <a class="btn btn-ghost" href="https://fpalmaii.github.io/messagevault-privacy/">Read the privacy policy</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="../">Home</a>
+      <a href="../compare/">Compare</a>
+      <a href="https://fpalmaii.github.io/messagevault-privacy/">Privacy policy</a>
+      <a href="https://fpalmaii.github.io/messagevault-support/">Support</a>
+      <a href="https://apps.apple.com/app/messagevault-ai/id6762476394">App Store</a>
+    </div>
+    <p>MessageVault is an iPhone app by Volta Solutions LLC. Requires iOS 16.6 or later.</p>
+    <p>© 2026 Volta Solutions LLC</p>
+  </div>
+</footer>
+
+</body>
+</html>
