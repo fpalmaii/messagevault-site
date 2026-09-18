@@ -90,5 +90,18 @@ else
     echo
     cat "$KEY.pub"
     echo
-    echo "Then run:  sh g.sh    (again - it will do the pull)"
+
+    # Put it on the Mac's own clipboard and open the page, so there is nothing
+    # to select by hand. The Mac clipboard works fine locally; it is only the
+    # PC -> RDP bridge that is broken.
+    if command -v pbcopy >/dev/null 2>&1; then
+        pbcopy < "$KEY.pub"
+        echo "-- key is now on this Mac's clipboard (just press Cmd-V)"
+    fi
+    if command -v open >/dev/null 2>&1; then
+        open "https://github.com/fpalmaii/MessageVault/settings/keys/new" 2>/dev/null
+        echo "-- opening the Deploy keys page in this Mac's browser"
+    fi
+    echo
+    echo "Tick 'Allow write access', save, then run:  sh g.sh"
 fi
